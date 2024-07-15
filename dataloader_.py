@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 import torch.utils 
-from utils import load_results_from_json, normalize_and_transform, remove_nans_from_dicts, get_class_weights
+from utils import load_results_from_json, normalize_and_transform_quantiles, remove_nans_from_dicts, get_class_weights
 import SimpleITK as sitk
 from monai import transforms
 from monai.data import Dataset, PersistentDataset
@@ -14,9 +14,9 @@ class sdf_dataloader(torch.utils.data.Dataset):
         self.json = load_results_from_json(json_data_dir)
         self.eval = eval
         if min_max_values is None:
-            self.json, self.min_max_values = normalize_and_transform(self.json)
+            self.json, self.min_max_values = normalize_and_transform_quantiles(self.json)
         else:
-            self.json, self.min_max_values = normalize_and_transform(self.json, min_max_values)
+            self.json, self.min_max_values = normalize_and_transform_quantiles(self.json, min_max_values)
         self.json = remove_nans_from_dicts(self.json)
         self.data_dir = data_dir
         #self.class_weights = get_class_weights(self.json)

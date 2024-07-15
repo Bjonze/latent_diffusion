@@ -97,7 +97,74 @@ def remove_nans_from_dicts(dict_list):
         return False
     
     return [d for d in dict_list if not contains_nan(d)]
+def normalize_and_transform_quantiles(data, min_max_values=None):
+    # Initialize dictionaries to hold min and max values for normalization
+    if min_max_values is None:
+        min_max_values = {
+            'scandata_BP_sys': {'min': float('inf'), 'max': float('-inf')},
+            'scandata_BP_dia': {'min': float('inf'), 'max': float('-inf')},
+            'clin_BP_sys': {'min': float('inf'), 'max': float('-inf')},
+            'clin_BP_dia': {'min': float('inf'), 'max': float('-inf')},
+            'age': {'min': float('inf'), 'max': float('-inf')},
+            'clin_height': {'min': float('inf'), 'max': float('-inf')},
+            'clin_weight': {'min': float('inf'), 'max': float('-inf')},
+            'vol': {'min': float('inf'), 'max': float('-inf')},
+            'med_hypertension': {'min': float(-1), 'max': float(1)},
+            'clin_sex': {'min': float(0), 'max': float(1)}
+            
+        }
 
+        # Find the min and max values for each key
+        scandata_bp_sys = []
+        scandata_bp_dia = []
+        bp_sys = []
+        bp_dia = []
+        age = []
+        height = []
+        weight = []
+        vol = []
+        med_hypertension = []
+        sex = []
+        for entry in data:
+            scandata_bp_sys.append(entry['scandata_BP_sys'])
+            scandata_bp_dia.append(entry['scandata_BP_dia'])
+            bp_sys.append(entry['clin_BP_sys'])
+            bp_dia.append(entry['clin_BP_dia'])
+            age.append(entry['age'])
+            height.append(entry['clin_height'])
+            weight.append(entry['clin_weight'])
+            vol.append(entry['vol'])
+
+        scandata_bp_sys = np.array(scandata_bp_sys)
+        scandata_bp_dia = np.array(scandata_bp_dia)
+        bp_sys = np.array(bp_sys)
+        bp_dia = np.array(bp_dia)
+        age = np.array(age)
+        height = np.array(height)
+        weight = np.array(weight)
+        vol = np.array(vol)
+
+        min_max_values['scandata_BP_sys']['min'] = np.quantile(scandata_bp_sys, 0.01)
+        min_max_values['scandata_BP_sys']['max'] = np.quantile(scandata_bp_sys, 0.99)
+        min_max_values['scandata_BP_dia']['min'] = np.quantile(scandata_bp_dia, 0.01)
+        min_max_values['scandata_BP_dia']['max'] = np.quantile(scandata_bp_dia, 0.99)
+        min_max_values['clin_BP_sys']['min'] = np.quantile(bp_sys, 0.01)
+        min_max_values['clin_BP_sys']['max'] = np.quantile(bp_sys, 0.99)
+        min_max_values['clin_BP_dia']['min'] = np.quantile(bp_dia, 0.01)
+        min_max_values['clin_BP_dia']['max'] = np.quantile(bp_dia, 0.99)
+        min_max_values['age']['min'] = np.quantile(age, 0.01)
+        min_max_values['age']['max'] = np.quantile(age, 0.99)
+        min_max_values['clin_height']['min'] = np.quantile(height, 0.01)
+        min_max_values['clin_height']['max'] = np.quantile(height, 0.99)
+        min_max_values['clin_weight']['min'] = np.quantile(weight, 0.01)
+        min_max_values['clin_weight']['max'] = np.quantile(weight, 0.99)
+        min_max_values['vol']['min'] = np.quantile(vol, 0.01)
+        min_max_values['vol']['max'] = np.quantile(vol, 0.99)
+        min_max_values['med_hypertension']['min'] = -1.0
+        min_max_values['med_hypertension']['max'] = 1.0
+        min_max_values['sex']['min'] = -1.0
+        min_max_values['sex']['min'] = 1.0
+    return data, min_max_values
 
 def normalize_and_transform(data, min_max_values=None):
     # Initialize dictionaries to hold min and max values for normalization
