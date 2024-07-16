@@ -125,7 +125,7 @@ def normalize_and_transform_quantiles(data, min_max_values=None):
         vol = []
         med_hypertension = []
         sex = []
-        for entry in data:
+        for entry in tqdm(data):
             scandata_bp_sys.append(entry['scandata_BP_sys'])
             scandata_bp_dia.append(entry['scandata_BP_dia'])
             bp_sys.append(entry['clin_BP_sys'])
@@ -162,8 +162,16 @@ def normalize_and_transform_quantiles(data, min_max_values=None):
         min_max_values['vol']['max'] = np.quantile(vol, 0.99)
         min_max_values['med_hypertension']['min'] = -1.0
         min_max_values['med_hypertension']['max'] = 1.0
-        min_max_values['sex']['min'] = -1.0
-        min_max_values['sex']['min'] = 1.0
+        min_max_values['clin_sex']['min'] = -1.0
+        min_max_values['clin_sex']['max'] = 1.0
+        for entry in data:
+            for key in min_max_values:
+                if entry[key] == None:
+                    continue
+                min_val = min_max_values[key]['min']
+                max_val = min_max_values[key]['max']
+                entry[key] = -1.0 + 2.0 * (entry[key] - min_val) / (max_val - min_val)
+
     return data, min_max_values
 
 def normalize_and_transform(data, min_max_values=None):

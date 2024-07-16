@@ -16,28 +16,45 @@ from gradacc import GradientAccumulation
 from losses import KLDivergenceLoss
 from monai_network_init import init_autoencoder, init_patch_discriminator
 
-from dataloader_ import sdf_dataloader
+from dataloader_ import sdf_dataloader, aekl_dataloader
 import wandb
-from utils import get_recon_loss
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+from utils import get_recon_loss, num_of_params
 
+from monai.data.image_reader import ITKReader
+from monai.data import Dataset, PersistentDataset
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+from torch.utils.data import DataLoader
 
 if __name__ == '__main__':
-    ds_tr = sdf_dataloader(r"D:\DTUTeams\bjorn\thesis_data\128_sdf",
-                           r"D:\DTUTeams\bjorn\thesis_data\train.json")
+    json_path = r"C:\bjorn\train_3.json"
+    data = pd.read_json(json_path)
+    data = data.to_dict(orient='records')
+    c_dir = r"C:\bjorn\cache_dir"
+    INPUT_SHAPE_AE = (128, 128, 128)
+    itk_reader = ITKReader()
+    transforms_fn = transforms.Compose([
+        transforms.CopyItemsD(keys={'file_name'}, names=['image']),
+        transforms.LoadImageD(image_only=True, keys=['image'], reader=itk_reader),
+        transforms.EnsureChannelFirstD(keys=['image']),
+    ])
+    trainset = PersistentDataset(data=data, transform=transforms_fn, cache_dir=c_dir)
+    #trainset = Dataset(data=data, transform=transforms_fn)
+    # trainset = aekl_dataloader(data_dir=r"C:\bjorn\128_sdf",
+    #                            json_data_dir=r"C:\bjorn\train_3.json")
+    dl_tr = DataLoader(dataset=trainset, 
+                                num_workers=8, 
+                                batch_size=2, 
+                                shuffle=True, 
+                                persistent_workers=True, 
+                                pin_memory=True)
     
-    dl_tr = torch.utils.data.DataLoader(ds_tr,
-                                        batch_size=2,
-                                        num_workers=8,
-                                        shuffle=True,
-                                        persistent_workers=True,
-                                        pin_memory=True)
-    
-    out_dir = r"D:\DTUTeams\bjorn\experiments\BrLP"
+    out_dir = r"D:\DTUTeams\bjorn\experiments\BrLP_2"
     os.makedirs(out_dir, exist_ok=True)
 
     autoencoder   = init_autoencoder().to(device)
+    num_of_params(autoencoder)
     discriminator = init_patch_discriminator().to(device)
+    num_of_params(discriminator)
 
     adv_weight          = 0.025
     perceptual_weight   = 0.001
@@ -72,7 +89,7 @@ if __name__ == '__main__':
 
     total_counter = 0
 
-    wandb.init(project="thesis_VAE", entity="Bjonze")
+    wandb.init(project="PhD", entity="Bjonze")
 
     for epoch in range(10):
         
@@ -84,8 +101,10 @@ if __name__ == '__main__':
 
             with autocast(enabled=True):
 
-                images = batch[0].to(device)
-                images = images.unsqueeze(1)
+                images = batch["image"]#.to(device)
+                images = images.to(device)
+                #images = batch.to(device)
+                #images = images.unsqueeze(1)
                 reconstruction, z_mu, z_sigma = autoencoder(images)
 
                 # we use [-1] here because the discriminator also returns 

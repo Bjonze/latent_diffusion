@@ -9,19 +9,37 @@ from utils import np_to_tensor, get_recon_loss
 from dataloader_ import sdf_dataloader
 from torch.cuda.amp import autocast, GradScaler
 from monai_network_init import init_autoencoder
+import pandas as pd 
+from monai.data.image_reader import ITKReader
+from monai.data import Dataset, PersistentDataset
+from monai import transforms
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = init_autoencoder()
-model.load_state_dict(torch.load(r"D:\DTUTeams\bjorn\experiments\BrLP\autoencoder-ep-3.pth"))
+model.load_state_dict(torch.load(r"D:\DTUTeams\bjorn\experiments\BrLP_2\autoencoder-ep-2.pth"))
 model = model.to(device)
 
 
-file_list = r"D:\DTUTeams\bjorn\thesis_data\train.json"
-data_dir = r"D:\DTUTeams\bjorn\thesis_data\128_sdf"
-dl_tr = sdf_dataloader(data_dir, file_list, eval=True)
-ls_dir = r"D:\DTUTeams\bjorn\experiments\BrLP\latent_codes"
+file_list = r"C:\bjorn\train_3.json"
+data_dir = r"C:\bjorn\128_sdf"
+ls_dir = r"C:\bjorn\latent_codes"
 os.makedirs(ls_dir, exist_ok=True)
-save_path = r"D:\DTUTeams\bjorn\experiments\BrLP\file_names"
+save_path = r"C:\bjorn\file_names"
 os.makedirs(save_path, exist_ok=True)
+json_path = r"C:\bjorn\train_3.json"
+data = pd.read_json(json_path)
+data = data.to_dict(orient='records')
+c_dir = r"C:\bjorn\cache_dir"
+INPUT_SHAPE_AE = (128, 128, 128)
+itk_reader = ITKReader()
+transforms_fn = transforms.Compose([
+    transforms.CopyItemsD(keys={'file_name'}, names=['image']),
+    transforms.LoadImageD(image_only=True, keys=['image'], reader=itk_reader),
+    transforms.EnsureChannelFirstD(keys=['image']),
+])
+trainset = PersistentDataset(data=data, transform=transforms_fn, cache_dir=c_dir)
+
+
 names_list = []
 mean_mu = None
 mean_logvar = None
@@ -33,10 +51,9 @@ if not len(os.listdir(ls_dir))>1:
     total_age = total_HT = total_bp_sys = total_bp_dia = total_height = total_weight = num_files = 0
     print("\nChecking for good files and cleaning names...")
     if file_list is not None: #json_data_dir_vl or json_data_dir_tr
-        for i, data in tqdm(enumerate(dl_tr), total=len(dl_tr)):
-            _, _, _, idx_dict = data #x = sdf, c = clinical data, p = values to predict, idx_dict = total patient info
-            full_names_list.append(idx_dict["file_name"])
-            match = pattern.search(idx_dict["file_name"])
+        for i, data in tqdm(enumerate(trainset), total=len(trainset)):
+            full_names_list.append(data["file_name"].split("/")[-1])
+            match = pattern.search(data["file_name"])
             names_list.append(match.group(1))
             
         names_list_path = os.path.join(save_path, "names_list.npy")
@@ -45,47 +62,36 @@ if not len(os.listdir(ls_dir))>1:
         np.save(full_names_list_path, full_names_list)
 model.eval()
 
-for i, data, short_name in tqdm(zip(range(len(dl_tr)), dl_tr, names_list), total=len(dl_tr)):
+for i, data, short_name in tqdm(zip(range(len(trainset)), trainset, names_list), total=len(trainset)):
     with autocast(enabled=True):
-        x, c, p, idx_dict = data #x = sdf, c = clinical data, p = values to predict, idx_dict = total patient info
-        out_dir = os.path.join(ls_dir, idx_dict["file_name"].split(".")[0])
-        if not torch.is_tensor(x):
-            x = np_to_tensor(x, device)
-        if not torch.is_tensor(c):
-            c = np_to_tensor(c, device)
-        if not torch.is_tensor(p):
-            p = np_to_tensor(p, device)
-        if x.dim() <= 4:
-            x = x[None, None, :, :, :]
-        if c.dim() <= 1:
-            c = c[None, :]
-        if p.dim() <= 1:
-            p = p[None, :]
+
         with torch.no_grad():
-            z_mu, z_sigma = model.encode(x)
-            c_np = c.squeeze().detach().cpu().numpy()
-            p_np = p.squeeze().detach().cpu().numpy()
+            image = data["image"]
+            image = image.unsqueeze(0).to(device)
+            z_mu, z_sigma = model.encode(image)
 
     mu_np = z_mu.squeeze().detach().cpu().numpy()
     sigma_np = z_sigma.squeeze().detach().cpu().numpy()
     total_mu += mu_np
     total_logvar += sigma_np
-    total_age += c_np[0]
-    total_HT += c_np[1]
-    total_bp_sys += c_np[2]
-    total_bp_dia += c_np[3]
-    total_height += c_np[4]
-    total_weight += c_np[5]
+    total_age += data["age"]
+    total_HT += data["med_hypertension"]
+    total_bp_sys += data["clin_BP_sys"]
+    total_bp_dia += data["clin_BP_dia"]
+    total_height += data["clin_height"]
+    total_weight += data["clin_weight"]
     num_files += 1
-    np_savez_kwargs = {"mu": mu_np, "z_sigma": sigma_np, "id": short_name}
+    np_savez_kwargs = {"z_mu": mu_np, "z_sigma": sigma_np, "id": short_name}
     np_savez_kwargs.update({"context":{
-        "age": c_np[0],
-        "med_hypertension": c_np[1],
-        "bp_sys":c_np[2],
-        "bp_dia:": c_np[3], 
-        "height": c_np[4],
-        "weight": c_np[5],
-        "vol": p_np[0],
-        "sex": p_np[1]
+        "age": data["age"],
+        "med_hypertension": data["med_hypertension"],
+        "bp_sys": data["clin_BP_sys"],
+        "bp_dia": data["clin_BP_dia"], 
+        "height": data["clin_height"],
+        "weight": data["clin_weight"],
+        "vol": data["vol"],
+        "sex": data["clin_sex"]
     }})
-    np.savez(out_dir, **np_savez_kwargs)
+    temp = data["file_name"].split("/")[-1].split(".")[0]
+    out_name = os.path.join(ls_dir, f"{temp}.npz")
+    np.savez(out_name, **np_savez_kwargs)

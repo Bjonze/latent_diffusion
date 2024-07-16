@@ -18,7 +18,7 @@ def sample_using_diffusion(
     beta_start: float = 0.0015, 
     beta_end: float = 0.0205, 
     verbose: bool = True,
-    deterministic: bool = False
+    seed: int = None
 ) -> torch.Tensor: 
     """
     Sampling random brain MRIs that follow the covariates in `context`.
@@ -54,9 +54,9 @@ def sample_using_diffusion(
     context = context[None, None, :].to(device)
 
     # drawing a random z_T ~ N(0,I)
-    latent_shape_dm = (3, 16, 16, 16)
-    if deterministic:
-        torch.manual_seed(1234)
+    latent_shape_dm = (3, 8, 8, 8)
+    if seed is not None:
+        torch.manual_seed(seed)
     #torch.manual_seed(1234)
     z = torch.randn(latent_shape_dm).unsqueeze(0).to(device)
     

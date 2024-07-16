@@ -8,13 +8,14 @@ import os
 from sampling import sample_using_diffusion
 import numpy as np
 from tqdm import tqdm
+from random import randint
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-output_dir = r"E:\DTUTeams\bmsh\meshes"
-aekl_ckpt = r"E:\DTUTeams\bmsh\experiments\autoencoder-ep-3.pth"
-diff_ckpt = r"E:\DTUTeams\bmsh\experiments\unet-ep-4.pth"
-latent_code_dir = r"E:\DTUTeams\bmsh\data\latent_codes"
+seed = randint(0, 1000)
+output_dir = r"C:\bjorn\test_meshes"
+aekl_ckpt = r"C:\bjorn\BrLP_2\autoencoder-ep-2.pth"
+diff_ckpt = r"C:\bjorn\latent_diffusion\unet-ep-2.pth"
+latent_code_dir = r"C:\bjorn\latent_codes"
 
 autoencoder = init_autoencoder(aekl_ckpt).to(device)
 diffusion = init_latent_diffusion(diff_ckpt).to(device)
@@ -29,7 +30,7 @@ weight = np.empty(len(trainset), dtype=np.float32)
 vol = np.empty(len(trainset), dtype=np.float32)
 sex = np.empty(len(trainset), dtype=np.float32)
 
-["age", "med_hypertension", "bp_sys", "bp_dia:", "height", "weight", "vol", "sex"]
+["age", "med_hypertension", "bp_sys", "bp_dia:", "height", "weight", "sex"]
 for i, (mu, sigma, context) in tqdm(enumerate(trainset), total=len(trainset)):
     age[i] = context[0]
     ht[i] = context[1]
@@ -37,8 +38,7 @@ for i, (mu, sigma, context) in tqdm(enumerate(trainset), total=len(trainset)):
     bp_dia[i] = context[3]
     heigth[i] = context[4]
     weight[i] = context[5]
-    vol[i] = context[6]
-    sex[i] = context[7]
+    sex[i] = context[6]
 
 low_age = np.quantile(age, 0.1)
 high_age = np.quantile(age, 0.9)
@@ -50,13 +50,11 @@ low_heigth = np.quantile(heigth, 0.1)
 high_heigth = np.quantile(heigth, 0.9)
 low_weight = np.quantile(weight, 0.1)
 high_weight = np.quantile(weight, 0.9)
-low_vol = np.quantile(vol, 0.1)
-high_vol = np.quantile(vol, 0.9)
-
+#male =1, female = 0
+#["age", "med_hypertension", "bp_sys", "bp_dia", "height", "weight", "sex"]
 conditions = []
-conditions.append([age.mean(), 0.0, bp_sys.mean(), bp_dia.mean(), heigth.mean(), weight.mean(), vol.mean(), 0.0])
-conditions.append([age.mean(), 0.0, low_bp_sys, low_bp_dia, heigth.mean(), weight.mean(), vol.mean(), 0.0])
-conditions.append([age.mean(), 1.0, high_bp_sys, high_bp_dia, heigth.mean(), weight.mean(), vol.mean(), 0.0])
+conditions.append([age.mean(), 0.0, bp_sys.mean(), bp_dia.mean(), heigth.mean(), weight.mean(), 1.0])
+conditions.append([age.mean(), 0.0, bp_sys.mean(), bp_dia.mean(), heigth.mean(), weight.mean(), 0.0])
 # conditions.append([low_age, 0.0, low_bp_sys, low_bp_dia, low_heigth, low_weight, low_vol, 0.0])
 # conditions.append([low_age, 1.0, low_bp_sys, low_bp_dia, low_heigth, low_weight, low_vol, 0.0])
 # conditions.append([high_age, 0.0, high_bp_sys, high_bp_dia, high_heigth, high_weight, high_vol, 0.0])
@@ -65,7 +63,7 @@ conditions.append([age.mean(), 1.0, high_bp_sys, high_bp_dia, heigth.mean(), wei
 # conditions.append([high_age, 0.0, bp_sys.mean(), bp_dia.mean(), heigth.mean(), weight.mean(), vol.mean(), 0.0])
 # conditions.append([low_age, 1.0, bp_sys.mean(), bp_dia.mean(), heigth.mean(), weight.mean(), vol.mean(), 0.0])
 # conditions.append([high_age, 1.0, bp_sys.mean(), bp_dia.mean(), heigth.mean(), weight.mean(), vol.mean(), 0.0])
-names = ["baseline", "low_bp_noHT_random", "high_bp_HT_random"]
+names = ["avg_male", "avg_female"]
 context = torch.tensor(np.array(conditions), device=device)
 
 with torch.no_grad():
@@ -75,6 +73,7 @@ with torch.no_grad():
 if not torch.is_tensor(z):
     z = torch.tensor(z)
 scale_factor = 1 / torch.std(z)
+print(f"Scaling factor set to {scale_factor}")
 
 for i in tqdm(range(len(context)), total=len(context)):
     name = names[i]
@@ -92,7 +91,7 @@ for i in tqdm(range(len(context)), total=len(context)):
         beta_start = 0.0015, 
         beta_end = 0.0205, 
         verbose = True,
-        deterministic=False
+        seed = seed
     )
     x = x.squeeze().detach().cpu().numpy()
     verts, faces, _, _ = marching_cubes(x, level=0)

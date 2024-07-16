@@ -42,11 +42,11 @@ def init_autoencoder(checkpoints_path: Optional[str] = None) -> nn.Module:
                                 in_channels=1, 
                                 out_channels=1, 
                                 latent_channels=3,
-                                num_channels=(16, 16, 32, 32),
+                                num_channels=(32, 32, 32, 64, 64),
                                 num_res_blocks=2, 
                                 norm_num_groups=16,
                                 norm_eps=1e-06,
-                                attention_levels=(False, False, False, False), 
+                                attention_levels=(False, False, False, False, False), 
                                 with_decoder_nonlocal_attn=False, 
                                 with_encoder_nonlocal_attn=False)
     return load_if(checkpoints_path, autoencoder)
@@ -64,7 +64,7 @@ def init_patch_discriminator(checkpoints_path: Optional[str] = None) -> nn.Modul
     """
     patch_discriminator = PatchDiscriminator(spatial_dims=3, 
                                              num_layers_d=3, 
-                                             num_channels=16, 
+                                             num_channels=8, 
                                              in_channels=1, 
                                              out_channels=1)
     return load_if(checkpoints_path, patch_discriminator)
@@ -92,7 +92,7 @@ def init_latent_diffusion(checkpoints_path: Optional[str] = None) -> nn.Module:
                                           num_head_channels=(0, 512, 768), 
                                           transformer_num_layers=1,
                                           with_conditioning=True,
-                                          cross_attention_dim=8,
+                                          cross_attention_dim=7,
                                           num_class_embeds=None, 
                                           upcast_attention=True, 
                                           use_flash_attention=False)

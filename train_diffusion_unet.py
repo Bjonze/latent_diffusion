@@ -13,7 +13,7 @@ from tqdm import tqdm
 from dataloader_ import diffusion_dataloader
 from utils import num_of_params
 import wandb
-
+from monai.data import Dataset, PersistentDataset
 from monai_network_init import init_autoencoder, init_latent_diffusion
 
 
@@ -25,15 +25,16 @@ if __name__ == '__main__':
     
 
     #parser.add_argument('--cache_dir',  required=True, type=str)
-    output_dir = r"E:\DTUTeams\bmsh\experiments"
-    aekl_ckpt = r"E:\DTUTeams\bmsh\experiments\autoencoder-ep-3.pth"
+    output_dir = r"C:\bjorn\latent_diffusion"
+    os.makedirs(output_dir, exist_ok=True)
+    aekl_ckpt = r"C:\bjorn\BrLP_2\autoencoder-ep-2.pth"
     diff_ckpt = None #r"E:\DTUTeams\bmsh\experiments"
-    num_workers = 0
+    num_workers = 16
     n_epochs = 5
     batch_size = 16
     lr = 2.5e-5
 
-    latent_code_dir = r"E:\DTUTeams\bmsh\data\latent_codes"
+    latent_code_dir = r"C:\bjorn\latent_codes"
     trainset = diffusion_dataloader(latent_code_dir)
 
     train_loader = DataLoader(dataset=trainset, 
@@ -66,7 +67,7 @@ if __name__ == '__main__':
         z = torch.tensor(z)
     scale_factor = 1 / torch.std(z)
     print(f"Scaling factor set to {scale_factor}")
-
+    wandb.init(project="PhD", entity="Bjonze")
     for epoch in range(n_epochs):
         diffusion.train()
         epoch_loss = 0
@@ -98,7 +99,8 @@ if __name__ == '__main__':
                     )
 
                     loss = F.mse_loss( noise.float(), noise_pred.float() )
-
+            log_dict = {"loss": loss.item() / (step + 1)}
+            wandb.log(log_dict)
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
@@ -107,9 +109,11 @@ if __name__ == '__main__':
             epoch_loss += loss.item()
             progress_bar.set_postfix({"loss": epoch_loss / (step + 1)})
             #global_counter[mode] += 1
-        
+            
+            
             # end of epoch
             epoch_loss = epoch_loss / len(train_loader)
+
             #writer.add_scalar(f'{mode}/epoch-mse', epoch_loss, epoch)
 
             # visualize results
