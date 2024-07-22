@@ -15,7 +15,7 @@ from utils import num_of_params
 import wandb
 from monai.data import Dataset, PersistentDataset
 from monai_network_init import init_autoencoder, init_latent_diffusion
-
+from validate import validate_diffusion
 
 
 set_determinism(0)
@@ -27,6 +27,11 @@ if __name__ == '__main__':
     #parser.add_argument('--cache_dir',  required=True, type=str)
     output_dir = r"C:\bjorn\latent_diffusion"
     os.makedirs(output_dir, exist_ok=True)
+    save_dir = os.path.join(output_dir, 'validation')
+    os.makedirs(save_dir, exist_ok=True)
+
+    normalization_dir = r"C:\bjorn\normalization_constants.json"#TODO change to the correct path
+
     aekl_ckpt = r"C:\bjorn\BrLP_2\autoencoder-ep-2.pth"
     diff_ckpt = None #r"E:\DTUTeams\bmsh\experiments"
     num_workers = 16
@@ -34,14 +39,24 @@ if __name__ == '__main__':
     batch_size = 16
     lr = 2.5e-5
 
-    latent_code_dir = r"C:\bjorn\latent_codes"
-    trainset = diffusion_dataloader(latent_code_dir)
+    latent_code_dir_train = r"C:\bjorn\latent_codes_train"
+    latent_code_dir_val = r"C:\bjorn\latent_codes_val"
+
+    trainset = diffusion_dataloader(latent_code_dir_train)
+    valset = diffusion_dataloader(latent_code_dir_val)
 
     train_loader = DataLoader(dataset=trainset, 
                               num_workers=num_workers, 
                               batch_size=batch_size, 
                               shuffle=True, 
-                              persistent_workers=False,
+                              persistent_workers=True,
+                              pin_memory=True)
+    
+    val_loader = DataLoader(dataset=valset, 
+                              num_workers=num_workers, 
+                              batch_size=batch_size, 
+                              shuffle=True, 
+                              persistent_workers=True,
                               pin_memory=True)
     
     autoencoder = init_autoencoder(aekl_ckpt).to(device)
@@ -113,10 +128,13 @@ if __name__ == '__main__':
             
             # end of epoch
             epoch_loss = epoch_loss / len(train_loader)
-
+            val_log_dict = validate_diffusion(diffusion, autoencoder, val_loader, scheduler, scale_factor, inferer, epoch, device)
+            wandb.log(val_log_dict)
             #writer.add_scalar(f'{mode}/epoch-mse', epoch_loss, epoch)
 
             # visualize results
         # save the model                
         savepath = os.path.join(output_dir, f'unet-ep-{epoch}.pth')
         torch.save(diffusion.state_dict(), savepath)
+        val_dir = os.path.join(save_dir, f'epoch_{epoch}')
+        validate_diffusion(diffusion, autoencoder, val_loader, scheduler, scale_factor, inferer, epoch, normalization_dir, save_dir, device)

@@ -11,6 +11,16 @@ import json
 import torch.nn as nn
 import math
 
+
+normalized_to_unnormalized = lambda x, min_val, max_val: (x + 1) * (max_val - min_val) / 2 + min_val
+def js_w(data, filename: str):
+    with open(filename, 'w') as json_file:
+        json.dump(data, json_file, indent=4)
+
+def js_r(filename: str):
+    with open(filename) as f_in:
+        return json.load(f_in)
+    
 def get_class_weights(dict_list):
     """
     Compute class weights for a list of dictionaries.

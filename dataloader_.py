@@ -7,6 +7,8 @@ from utils import load_results_from_json, normalize_and_transform_quantiles, rem
 import SimpleITK as sitk
 from monai import transforms
 from monai.data import Dataset, PersistentDataset
+from torch.utils.data import DataLoader
+
 class sdf_dataloader(torch.utils.data.Dataset):
     def __init__(self, data_dir, json_data_dir, min_max_values=None, eval=False):
         super().__init__
@@ -92,9 +94,23 @@ class aekl_dataloader(torch.utils.data.Dataset):
         file_name = idx_dict["file_name"]
         sdf = sitk.GetArrayFromImage(sitk.ReadImage(file_name))
         return sdf
+    
+class test_dataloader(torch.utils.data.Dataset):
+    def __init__(self):
+        super().__init__
+    def __len__(self) -> int:
+        self.len = 1
+        return self.len 
+    
+    def __getitem__(self, idx):
+        return torch.randome.randn(128, 128, 128)
         
 
 if __name__ == '__main__':
-    latent_code_dir = r"E:\DTUTeams\bmsh\data\latent_codes"
-    ds_tr = diffusion_dataloader(latent_code_dir)
-    mu, sigma, context = ds_tr[0]
+    
+    ds_tr = test_dataloader()
+    dl_tr = DataLoader(dataset=ds_tr, 
+                            num_workers=0, 
+                            batch_size=10, 
+                            shuffle=True)
+    print(len(dl_tr))
