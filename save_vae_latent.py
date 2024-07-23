@@ -16,15 +16,15 @@ from monai import transforms
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = init_autoencoder()
-model.load_state_dict(torch.load(r"D:\DTUTeams\bjorn\experiments\BrLP_2\autoencoder-ep-2.pth"))
+model.load_state_dict(torch.load(r"D:\DTUTeams\bjorn\experiments\BrLP_2.1\autoencoder-ep-5.pth"))
 model = model.to(device)
 
 
 file_list = r"C:\bjorn\train_3.json"
 data_dir = r"C:\bjorn\128_sdf"
-ls_dir = r"C:\bjorn\latent_codes"
+ls_dir = r"C:\bjorn\latent_codes_2.1"
 os.makedirs(ls_dir, exist_ok=True)
-save_path = r"C:\bjorn\file_names"
+save_path = r"C:\bjorn\file_names_2.1"
 os.makedirs(save_path, exist_ok=True)
 json_path = r"C:\bjorn\train_3.json"
 data = pd.read_json(json_path)
@@ -89,8 +89,7 @@ for i, data, short_name in tqdm(zip(range(len(trainset)), trainset, names_list),
         "bp_dia": data["clin_BP_dia"], 
         "height": data["clin_height"],
         "weight": data["clin_weight"],
-        "vol": data["vol"],
-        "sex": data["clin_sex"]
+        "sex": data["clin_sex"]#        "vol": data["vol"],
     }})
     temp = data["file_name"].split("/")[-1].split(".")[0]
     out_name = os.path.join(ls_dir, f"{temp}.npz")

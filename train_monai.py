@@ -48,7 +48,7 @@ if __name__ == '__main__':
                                 persistent_workers=True, 
                                 pin_memory=True)
     
-    out_dir = r"D:\DTUTeams\bjorn\experiments\BrLP_2"
+    out_dir = r"D:\DTUTeams\bjorn\experiments\BrLP_2.1"
     os.makedirs(out_dir, exist_ok=True)
 
     autoencoder   = init_autoencoder().to(device)
@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
     adv_weight          = 0.025
     perceptual_weight   = 0.001
-    kl_weight           = 1e-7
+    kl_weight           = 1e-5
 
     l1_loss_fn = get_recon_loss(mode="L1", reduction="mean", weight=True, device=device)
     kl_loss_fn = KLDivergenceLoss()

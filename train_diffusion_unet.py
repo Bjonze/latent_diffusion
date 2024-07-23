@@ -25,39 +25,39 @@ if __name__ == '__main__':
     
 
     #parser.add_argument('--cache_dir',  required=True, type=str)
-    output_dir = r"C:\bjorn\latent_diffusion"
+    output_dir = r"C:\bjorn\latent_diffusion_2.1"
     os.makedirs(output_dir, exist_ok=True)
     save_dir = os.path.join(output_dir, 'validation')
     os.makedirs(save_dir, exist_ok=True)
 
-    normalization_dir = r"C:\bjorn\normalization_constants.json"#TODO change to the correct path
+    normalization_dir = r"C:\bjorn\normalization_constants\constants.json"
 
-    aekl_ckpt = r"C:\bjorn\BrLP_2\autoencoder-ep-2.pth"
+    aekl_ckpt = r"D:\DTUTeams\bjorn\experiments\BrLP_2.1\autoencoder-ep-5.pth"
     diff_ckpt = None #r"E:\DTUTeams\bmsh\experiments"
-    num_workers = 16
+    num_workers = 8
     n_epochs = 5
     batch_size = 16
     lr = 2.5e-5
 
-    latent_code_dir_train = r"C:\bjorn\latent_codes_train"
-    latent_code_dir_val = r"C:\bjorn\latent_codes_val"
+    latent_code_dir_train = r"C:\bjorn\latent_codes_train_2.1"
+    latent_code_dir_val = r"C:\bjorn\latent_codes_val_2.1"
 
     trainset = diffusion_dataloader(latent_code_dir_train)
     valset = diffusion_dataloader(latent_code_dir_val)
 
     train_loader = DataLoader(dataset=trainset, 
-                              num_workers=num_workers, 
+                              num_workers=num_workers, #num_workers
                               batch_size=batch_size, 
                               shuffle=True, 
                               persistent_workers=True,
                               pin_memory=True)
     
     val_loader = DataLoader(dataset=valset, 
-                              num_workers=num_workers, 
-                              batch_size=batch_size, 
-                              shuffle=True, 
-                              persistent_workers=True,
-                              pin_memory=True)
+                            num_workers=1, 
+                            batch_size=batch_size, 
+                            shuffle=True, 
+                            persistent_workers=True,
+                            pin_memory=True)
     
     autoencoder = init_autoencoder(aekl_ckpt).to(device)
     diffusion = init_latent_diffusion(diff_ckpt).to(device)
@@ -127,9 +127,8 @@ if __name__ == '__main__':
             
             
             # end of epoch
-            epoch_loss = epoch_loss / len(train_loader)
-            val_log_dict = validate_diffusion(diffusion, autoencoder, val_loader, scheduler, scale_factor, inferer, epoch, device)
-            wandb.log(val_log_dict)
+            #epoch_loss = epoch_loss / len(train_loader)
+            
             #writer.add_scalar(f'{mode}/epoch-mse', epoch_loss, epoch)
 
             # visualize results
@@ -137,4 +136,5 @@ if __name__ == '__main__':
         savepath = os.path.join(output_dir, f'unet-ep-{epoch}.pth')
         torch.save(diffusion.state_dict(), savepath)
         val_dir = os.path.join(save_dir, f'epoch_{epoch}')
-        validate_diffusion(diffusion, autoencoder, val_loader, scheduler, scale_factor, inferer, epoch, normalization_dir, save_dir, device)
+        val_log_dict = validate_diffusion(diffusion, autoencoder, val_loader, valset.context_keys, scheduler, scale_factor, inferer, epoch, normalization_dir, save_dir, device)
+        wandb.log(val_log_dict)

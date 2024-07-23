@@ -50,8 +50,13 @@ def sample_using_diffusion(
     scheduler.set_timesteps(num_inference_steps=num_inference_steps)
 
     # the subject-specific variables and the progression-related 
-    # covariates are concatenated into a vector outside this function. 
-    context = context[None, None, :].to(device)
+    # covariates are concatenated into a vector outside this function.
+    if context.dim() == 1:
+        context = context[None, None, :].to(device)
+    if context.dim() == 2:
+        context = context[None, :].to(device)
+    else:
+        context = context.to(device)
 
     # drawing a random z_T ~ N(0,I)
     latent_shape_dm = (3, 8, 8, 8)
