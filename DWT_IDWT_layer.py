@@ -36,7 +36,6 @@ class DWT_3D(Module):
 
     def get_matrix(self):
         """
-        生成变换矩阵
         generating the matrices: \mathcal{L}, \mathcal{H}
         :return: self.matrix_low = \mathcal{L}, self.matrix_high = \mathcal{H}
         """
@@ -140,7 +139,6 @@ class IDWT_3D(Module):
 
     def get_matrix(self):
         """
-        生成变换矩阵
         generating the matrices: \mathcal{L}, \mathcal{H}
         :return: self.matrix_low = \mathcal{L}, self.matrix_high = \mathcal{H}
         """
@@ -225,20 +223,25 @@ class IDWT_3D(Module):
 
 
 if __name__ == '__main__':
+    import SimpleITK as sitk
+    import trimesh
+    from skimage.measure import marching_cubes
     dwt = DWT_3D("haar")
     iwt = IDWT_3D("haar")
-    x = torch.randn(3, 1, 128, 128, 128).cuda()
+    #x = torch.randn(3, 1, 128, 128, 128).cuda()
+    x = sitk.GetArrayFromImage(sitk.ReadImage(r"C:\Users\bmsha\data\test_sdf\Aorta-2_0002_SERIES0004_segment_2_crop_label.nii.gz"))
+    x = torch.tensor(x).float().cuda()
+    x = x[None, None,...]
     xll = x
-    wavelet_list = []
-    for i in range(3):
-        LLL, LLH, LHL, LHH, HLL, HLH, HHL, HHH = dwt(xll)
-        wavelet_list.append([LLL, LLH, LHL, LHH, HLL, HLH, HHL, HHH])
-
-    # xll = wavelet_list[-1] * torch.randn(xll.shape)
-    for i in range(2)[::-1]:
-        LLL, LLH, LHL, LHH, HLL, HLH, HHL, HHH = wavelet_list[i]
-        xll = iwt(LLL, LLH, LHL, LHH, HLL, HLH, HHL, HHH)
-        print(xll.shape)
-
+    LLL, LLH, LHL, LHH, HLL, HLH, HHL, HHH = dwt(xll)
+    xll = iwt(LLL, LLH, LHL, LHH, HLL, HLH, HHL, HHH)
+    y = torch.cat((LLL, LLH, LHL, LHH, HLL, HLH, HHL, HHH))
     print(torch.sum(x - xll))
-    print(torch.sum(x - iwt(*wavelet_list[0])))
+    # x = x.squeeze().cpu().detach().numpy()
+    # xll = xll.squeeze().cpu().detach().numpy()
+    # verts, faces, _, _ = marching_cubes(x, level=0)
+    # mesh = trimesh.Trimesh(vertices=verts, faces=faces)
+    # mesh.export(r"C:\Users\bmsha\Downloads\test_meshes\test_meshes\original.stl")
+    # verts, faces, _, _ = marching_cubes(xll, level=0)
+    # mesh = trimesh.Trimesh(vertices=verts, faces=faces)
+    # mesh.export(r"C:\Users\bmsha\Downloads\test_meshes\test_meshes\reconstructed.stl")
