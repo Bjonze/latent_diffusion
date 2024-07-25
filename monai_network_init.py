@@ -39,14 +39,14 @@ def init_autoencoder(checkpoints_path: Optional[str] = None) -> nn.Module:
         nn.Module: the KL autoencoder
     """
     autoencoder = AutoencoderKL(spatial_dims=3, 
-                                in_channels=1, 
-                                out_channels=1, 
+                                in_channels=8, 
+                                out_channels=8, 
                                 latent_channels=3,
-                                num_channels=(32, 32, 32, 64, 64),
+                                num_channels=(32, 64, 64, 128),#(32, 32, 32, 64, 64),
                                 num_res_blocks=2, 
                                 norm_num_groups=16,
                                 norm_eps=1e-06,
-                                attention_levels=(False, False, False, False, False), 
+                                attention_levels=(False, False, False, False), #(False, False, False, False, False)
                                 with_decoder_nonlocal_attn=False, 
                                 with_encoder_nonlocal_attn=False)
     return load_if(checkpoints_path, autoencoder)
@@ -65,8 +65,8 @@ def init_patch_discriminator(checkpoints_path: Optional[str] = None) -> nn.Modul
     patch_discriminator = PatchDiscriminator(spatial_dims=3, 
                                              num_layers_d=3, 
                                              num_channels=8, 
-                                             in_channels=1, 
-                                             out_channels=1)
+                                             in_channels=8, 
+                                             out_channels=8)
     return load_if(checkpoints_path, patch_discriminator)
 
     

@@ -13,32 +13,34 @@ import pandas as pd
 from monai.data.image_reader import ITKReader
 from monai.data import Dataset, PersistentDataset
 from monai import transforms
-
+from dataloader_ import sdf_dataloader, aekl_dataloader, wav_dataloader
+from torch.utils.data import DataLoader
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = init_autoencoder()
-model.load_state_dict(torch.load(r"D:\DTUTeams\bjorn\experiments\BrLP_2.1\autoencoder-ep-5.pth"))
+#model.load_state_dict(torch.load(r"D:\DTUTeams\bjorn\experiments\BrLP_2.1\autoencoder-ep-5.pth"))
+model.load_state_dict(torch.load(r"E:\DTUTeams\bmsh\experiments\BrLP_wav\autoencoder-ep-1.pth"))
 model = model.to(device)
 
 
-file_list = r"C:\bjorn\train_3.json"
-data_dir = r"C:\bjorn\128_sdf"
-ls_dir = r"C:\bjorn\latent_codes_2.1"
+file_list = r"E:\DTUTeams\bmsh\data\train_3.json" #r"C:\bjorn\train_3.json"
+data_dir = r"E:\DTUTeams\bmsh\data\wavelet_sdf" #r"C:\bjorn\128_sdf"
+ls_dir = r"E:\DTUTeams\bmsh\data\latent_codes_wav"#r"C:\bjorn\latent_codes_2.1"
 os.makedirs(ls_dir, exist_ok=True)
-save_path = r"C:\bjorn\file_names_2.1"
+save_path = r"E:\DTUTeams\bmsh\data\file_names_wav" #r"C:\bjorn\file_names_2.1"
 os.makedirs(save_path, exist_ok=True)
-json_path = r"C:\bjorn\train_3.json"
-data = pd.read_json(json_path)
-data = data.to_dict(orient='records')
-c_dir = r"C:\bjorn\cache_dir"
+json_path = r"E:\DTUTeams\bmsh\data\train_3.json" #r"C:\bjorn\train_3.json"
+# data = pd.read_json(json_path)
+# data = data.to_dict(orient='records')
+# c_dir = r"C:\bjorn\cache_dir"
 INPUT_SHAPE_AE = (128, 128, 128)
-itk_reader = ITKReader()
-transforms_fn = transforms.Compose([
-    transforms.CopyItemsD(keys={'file_name'}, names=['image']),
-    transforms.LoadImageD(image_only=True, keys=['image'], reader=itk_reader),
-    transforms.EnsureChannelFirstD(keys=['image']),
-])
-trainset = PersistentDataset(data=data, transform=transforms_fn, cache_dir=c_dir)
-
+# itk_reader = ITKReader()
+# transforms_fn = transforms.Compose([
+#     transforms.CopyItemsD(keys={'file_name'}, names=['image']),
+#     transforms.LoadImageD(image_only=True, keys=['image'], reader=itk_reader),
+#     transforms.EnsureChannelFirstD(keys=['image']),
+# ])
+#trainset = PersistentDataset(data=data, transform=transforms_fn, cache_dir=c_dir)
+trainset = wav_dataloader(data_dir=r"E:\DTUTeams\bmsh\data\wavelet_sdf", json_data_dir=json_path)    
 
 names_list = []
 mean_mu = None

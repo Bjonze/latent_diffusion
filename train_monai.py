@@ -16,7 +16,7 @@ from gradacc import GradientAccumulation
 from losses import KLDivergenceLoss
 from monai_network_init import init_autoencoder, init_patch_discriminator
 
-from dataloader_ import sdf_dataloader, aekl_dataloader
+from dataloader_ import sdf_dataloader, aekl_dataloader, wav_dataloader
 import wandb
 from utils import get_recon_loss, num_of_params
 
@@ -26,29 +26,30 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 from torch.utils.data import DataLoader
 
 if __name__ == '__main__':
-    json_path = r"C:\bjorn\train_3.json"
-    data = pd.read_json(json_path)
-    data = data.to_dict(orient='records')
-    c_dir = r"C:\bjorn\cache_dir"
+    json_path = r"E:\DTUTeams\bmsh\data\train_3.json" #r"C:\bjorn\train_3.json"
+    #data = pd.read_json(json_path)
+    # data = data.to_dict(orient='records')
+    # c_dir = r"C:\bjorn\cache_dir"
     INPUT_SHAPE_AE = (128, 128, 128)
-    itk_reader = ITKReader()
-    transforms_fn = transforms.Compose([
-        transforms.CopyItemsD(keys={'file_name'}, names=['image']),
-        transforms.LoadImageD(image_only=True, keys=['image'], reader=itk_reader),
-        transforms.EnsureChannelFirstD(keys=['image']),
-    ])
-    trainset = PersistentDataset(data=data, transform=transforms_fn, cache_dir=c_dir)
+    # itk_reader = ITKReader()
+    # transforms_fn = transforms.Compose([
+    #     transforms.CopyItemsD(keys={'file_name'}, names=['image']),
+    #     transforms.LoadImageD(image_only=True, keys=['image'], reader=itk_reader),
+    #     transforms.EnsureChannelFirstD(keys=['image']),
+    # ])
+    # trainset = PersistentDataset(data=data, transform=transforms_fn, cache_dir=c_dir)
     #trainset = Dataset(data=data, transform=transforms_fn)
     # trainset = aekl_dataloader(data_dir=r"C:\bjorn\128_sdf",
     #                            json_data_dir=r"C:\bjorn\train_3.json")
+    trainset = wav_dataloader(data_dir=r"E:\DTUTeams\bmsh\data\wavelet_sdf", json_data_dir=json_path)    
     dl_tr = DataLoader(dataset=trainset, 
-                                num_workers=8, 
+                                num_workers=0, 
                                 batch_size=2, 
                                 shuffle=True, 
-                                persistent_workers=True, 
-                                pin_memory=True)
+                                persistent_workers=False, 
+                                pin_memory=False)
     
-    out_dir = r"D:\DTUTeams\bjorn\experiments\BrLP_2.1"
+    out_dir = r"E:\DTUTeams\bmsh\experiments\BrLP_wav"#r"D:\DTUTeams\bjorn\experiments\BrLP_wav"
     os.makedirs(out_dir, exist_ok=True)
 
     autoencoder   = init_autoencoder().to(device)
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     perceptual_weight   = 0.001
     kl_weight           = 1e-5
 
-    l1_loss_fn = get_recon_loss(mode="L1", reduction="mean", weight=True, device=device)
+    l1_loss_fn = get_recon_loss(mode="L1", reduction="mean", weight=None, device=device) #get_recon_loss(mode="L1", reduction="mean", weight=True, device=device)
     kl_loss_fn = KLDivergenceLoss()
     adv_loss_fn = PatchAdversarialLoss(criterion="least_squares")
 
@@ -101,9 +102,9 @@ if __name__ == '__main__':
 
             with autocast(enabled=True):
 
-                images = batch["image"]#.to(device)
-                images = images.to(device)
-                #images = batch.to(device)
+                #images = batch["image"]#.to(device)
+                #images = images.to(device)
+                images = batch.to(device)
                 #images = images.unsqueeze(1)
                 reconstruction, z_mu, z_sigma = autoencoder(images)
 
@@ -120,10 +121,10 @@ if __name__ == '__main__':
 
                 rec_loss = l1_loss_fn(reconstruction.float(), images.float())
                 kld_loss = kl_weight * kl_loss_fn(z_mu, z_sigma)
-                per_loss = perceptual_weight * perc_loss_fn(reconstruction.float(), images.float())
+                #per_loss = perceptual_weight * perc_loss_fn(reconstruction.float(), images.float()) TODO: potentially back-transform images for this to work
                 gen_loss = adv_weight * adv_loss_fn(logits_fake, target_is_real=True, for_discriminator=False)
                 
-                loss_g = rec_loss + kld_loss + per_loss + gen_loss
+                loss_g = rec_loss + kld_loss + gen_loss #rec_loss + kld_loss + per_loss + gen_loss
                 
             gradacc_g.step(loss_g, step)
 
@@ -140,7 +141,9 @@ if __name__ == '__main__':
         
             gradacc_d.step(loss_d, step)
 
-            log_dict = {"Generator/reconstruction_loss": rec_loss.item(), "Generator/perceptual_loss": per_loss.item(), "Generator/adverarial_loss" : gen_loss.item(),
+            # log_dict = {"Generator/reconstruction_loss": rec_loss.item(), "Generator/perceptual_loss": per_loss.item(), "Generator/adverarial_loss" : gen_loss.item(),
+            #             "Generator/kl_regularization": kld_loss.item(), "Discriminator/adverarial_loss": loss_d.item()}
+            log_dict = {"Generator/reconstruction_loss": rec_loss.item(), "Generator/adverarial_loss" : gen_loss.item(),
                         "Generator/kl_regularization": kld_loss.item(), "Discriminator/adverarial_loss": loss_d.item()}
             wandb.log(log_dict)
 

@@ -3,11 +3,12 @@ import numpy as np
 import os
 
 import torch.utils 
-from utils import load_results_from_json, normalize_and_transform_quantiles, remove_nans_from_dicts, get_class_weights
+from utils import load_results_from_json, normalize_and_transform_quantiles, remove_nans_from_dicts, get_class_weights, js_r
 import SimpleITK as sitk
 from monai import transforms
 from monai.data import Dataset, PersistentDataset
 from torch.utils.data import DataLoader
+
 
 class sdf_dataloader(torch.utils.data.Dataset):
     def __init__(self, data_dir, json_data_dir, min_max_values=None, eval=False):
@@ -26,7 +27,7 @@ class sdf_dataloader(torch.utils.data.Dataset):
         self.keys_p = ["vol", 'clin_sex']
     def __len__(self) -> int:
         self.len = len(self.json)
-        return self.len 
+        return self.len
     
     def __getitem__(self, idx):
         idx_dict = self.json[idx]
@@ -104,8 +105,30 @@ class test_dataloader(torch.utils.data.Dataset):
     
     def __getitem__(self, idx):
         return torch.randome.randn(128, 128, 128)
-        
 
+class wav_dataloader(torch.utils.data.Dataset):
+    def __init__(self, data_dir, json_data_dir):
+        super().__init__
+        self.dir_data_json = json_data_dir
+        self.json = js_r(json_data_dir)
+        self.json = remove_nans_from_dicts(self.json)
+        self.data_dir = data_dir
+    def __len__(self) -> int:
+        self.len = len(self.json)
+        return self.len 
+    
+    def __getitem__(self, idx):
+        idx_dict = self.json[idx]
+        file_name = idx_dict["file_name"]
+        file_name = file_name.split("/")[-1]
+        file_name = file_name.split(".")[0]
+        file_name = file_name + ".pt"
+        file_name = os.path.join(self.data_dir, file_name)
+        sdf = torch.load(file_name)
+        sdf = sdf.squeeze()
+        return sdf
+    
+#ave_path = r"E:\DTUTeams\bmsh\data\wavelet_sdf"
 if __name__ == '__main__':
     
     ds_tr = test_dataloader()
