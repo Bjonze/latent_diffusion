@@ -113,6 +113,8 @@ class wav_dataloader(torch.utils.data.Dataset):
         self.json = js_r(json_data_dir)
         self.json = remove_nans_from_dicts(self.json)
         self.data_dir = data_dir
+        self.context_keys = ["age", "med_hypertension", "clin_BP_sys", "clin_BP_dia", "clin_height", "clin_weight", "clin_sex"]
+
     def __len__(self) -> int:
         self.len = len(self.json)
         return self.len 
@@ -126,7 +128,9 @@ class wav_dataloader(torch.utils.data.Dataset):
         file_name = os.path.join(self.data_dir, file_name)
         sdf = torch.load(file_name)
         sdf = sdf.squeeze()
-        return sdf
+        context = np.array([idx_dict[c] for c in self.context_keys])
+
+        return sdf, context
     
 #ave_path = r"E:\DTUTeams\bmsh\data\wavelet_sdf"
 if __name__ == '__main__':

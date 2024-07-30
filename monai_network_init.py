@@ -127,3 +127,32 @@ def init_controlnet(checkpoints_path: Optional[str] = None) -> nn.Module:
                             conditioning_embedding_in_channels=4,  
                             conditioning_embedding_num_channels=(256,))
     return load_if(checkpoints_path, controlnet)
+
+
+def init_wav_diffusion(checkpoints_path: Optional[str] = None) -> nn.Module:
+    """
+    Load the UNet from the diffusion model (pretrained if `checkpoints_path` points to previous params).
+
+    Args:
+        checkpoints_path (Optional[str], optional): path of the checkpoints. Defaults to None.
+
+    Returns:
+        nn.Module: the UNet
+    """
+    latent_diffusion = DiffusionModelUNet(spatial_dims=3, 
+                                          in_channels=8, 
+                                          out_channels=8, 
+                                          num_res_blocks=2, 
+                                          num_channels=(16, 32, 32, 64), 
+                                          attention_levels=(False, False, True, True), 
+                                          norm_num_groups=16, 
+                                          norm_eps=1e-6, 
+                                          resblock_updown=True, 
+                                          num_head_channels=(0, 16, 16, 32), 
+                                          transformer_num_layers=1,
+                                          with_conditioning=True,
+                                          cross_attention_dim=7,
+                                          num_class_embeds=None, 
+                                          upcast_attention=False, 
+                                          use_flash_attention=True)
+    return load_if(checkpoints_path, latent_diffusion)
