@@ -4,8 +4,11 @@ import argparse
 import torch
 import torch.nn.functional as F
 
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
+from gradacc import GradientAccumulation
+
 from torch.utils.data import DataLoader
+
 from monai.utils import set_determinism
 from generative.networks.schedulers import DDPMScheduler
 from generative.inferers import DiffusionInferer
@@ -26,7 +29,7 @@ if __name__ == '__main__':
     
 
     #parser.add_argument('--cache_dir',  required=True, type=str)
-    output_dir = r"C:\bjorn\wavelet_diffusion"
+    output_dir = r"C:\bjorn\wavelet_clipped_diffusion"
     os.makedirs(output_dir, exist_ok=True)
     save_dir = os.path.join(output_dir, 'validation')
     os.makedirs(save_dir, exist_ok=True)
@@ -35,12 +38,12 @@ if __name__ == '__main__':
 
     diff_ckpt = None
     num_workers = 8
-    n_epochs = 5
-    batch_size = 16
-    lr = 2.5e-5
+    n_epochs = 15
+    batch_size = 2
+    lr = 2.5e-4
 
 
-    data_dir = r"D:\DTUTeams\bjorn\thesis_data\wavelet_sdf"
+    data_dir = r"D:\DTUTeams\bjorn\thesis_data\wavelet_clipped_sdf"
     json_data_dir = r"C:\bjorn\train_3.json"
     trainset = wav_dataloader(data_dir, json_data_dir)
 
@@ -64,17 +67,23 @@ if __name__ == '__main__':
 
     inferer = DiffusionInferer(scheduler=scheduler)
     optimizer = torch.optim.AdamW(diffusion.parameters(), lr=lr)
-    scaler = GradScaler()
+    scaler = GradScaler('cuda')
+    gradacc_d = GradientAccumulation(actual_batch_size=2,
+                                     expect_batch_size=16,
+                                     loader_len=len(train_loader),
+                                     optimizer=optimizer, 
+                                     grad_scaler=scaler)
+    
     
     with torch.no_grad():
-        with autocast(enabled=True):
+        with autocast('cuda', enabled=True):
             z,_, = trainset[0]
     if not torch.is_tensor(z):
         z = torch.tensor(z)
 
     scale_factor = 1 / torch.std(z)
     print(f"Scaling factor set to {scale_factor}")
-    #wandb.init(project="PhD", entity="Bjonze")
+    wandb.init(project="PhD", entity="Bjonze")
     for epoch in range(n_epochs):
         diffusion.train()
         epoch_loss = 0
@@ -83,21 +92,24 @@ if __name__ == '__main__':
         
         for step, batch in progress_bar:
                         
-            with autocast(enabled=True):
+            with autocast('cuda', enabled=True):
                 wav_sdf, context = batch
+                if context.dtype == torch.float64:
+                    context = context.float()
+
                     
                 optimizer.zero_grad(set_to_none=True)
-                latents = wav_sdf.to(device) * scale_factor
+                wav_sdf = wav_sdf.to(device) * scale_factor
                 context = context.unsqueeze(1).to(device)
-                n = latents.shape[0]
+                n = wav_sdf.shape[0]
                                                         
                 with torch.set_grad_enabled(True):#True if mode == 'train' else False
                     
-                    noise = torch.randn_like(latents).to(device)
+                    noise = torch.randn_like(wav_sdf).to(device)
                     timesteps = torch.randint(0, scheduler.num_train_timesteps, (n,), device=device).long()
 
                     noise_pred = inferer(
-                        inputs=latents, 
+                        inputs=wav_sdf, 
                         diffusion_model=diffusion, 
                         noise=noise, 
                         timesteps=timesteps,
@@ -107,10 +119,11 @@ if __name__ == '__main__':
 
                     loss = F.mse_loss( noise.float(), noise_pred.float() )
             log_dict = {"loss": loss.item() / (step + 1)}
-            #wandb.log(log_dict)
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+            wandb.log(log_dict)
+            gradacc_d.step(loss, step)
+            #scaler.scale(loss).backward()
+            #scaler.step(optimizer)
+            #scaler.update()
                 
             #writer.add_scalar(f'{mode}/batch-mse', loss.item(), global_counter[mode])
             epoch_loss += loss.item()
