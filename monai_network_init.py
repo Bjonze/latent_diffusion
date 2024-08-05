@@ -156,3 +156,32 @@ def init_wav_diffusion(checkpoints_path: Optional[str] = None) -> nn.Module:
                                           upcast_attention=True, 
                                           use_flash_attention=False)
     return load_if(checkpoints_path, latent_diffusion)
+
+
+def init_latent_diffusion_2d_test(checkpoints_path: Optional[str] = None) -> nn.Module:
+    """
+    Load the UNet from the diffusion model (pretrained if `checkpoints_path` points to previous params).
+
+    Args:
+        checkpoints_path (Optional[str], optional): path of the checkpoints. Defaults to None.
+
+    Returns:
+        nn.Module: the UNet
+    """
+    latent_diffusion = DiffusionModelUNet(spatial_dims=2, 
+                                          in_channels=12, 
+                                          out_channels=12, 
+                                          num_res_blocks=2, 
+                                          num_channels=(64, 64, 128, 256), 
+                                          attention_levels=(False, False, True, True), 
+                                          norm_num_groups=32, 
+                                          norm_eps=1e-6, 
+                                          resblock_updown=True, 
+                                          num_head_channels=(0, 0, 32, 32), 
+                                          transformer_num_layers=1,
+                                          with_conditioning=False,
+                                          cross_attention_dim=None,
+                                          num_class_embeds=None, 
+                                          upcast_attention=True, 
+                                          use_flash_attention=False)
+    return load_if(checkpoints_path, latent_diffusion)
