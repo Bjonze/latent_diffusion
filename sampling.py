@@ -260,17 +260,17 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    output_dir = r"C:\bjorn\wavelet_clipped_diffusion\meshes"
+    output_dir = r"C:\bjorn\latent_diffusion_2.1\test_meshes"
     os.makedirs(output_dir, exist_ok=True)
 
-    diff_ckpt = r"C:\bjorn\wavelet_clipped_diffusion\unet-ep-5.pth"
+    diff_ckpt = r"C:\bjorn\latent_diffusion_2.1\unet-ep-4.pth"
     diffusion = init_wav_diffusion(diff_ckpt).to(device)
 
-    data_dir = r"D:\DTUTeams\bjorn\thesis_data\wavelet_clipped_sdf"
+    data_dir = r"C:\bjorn\latent_codes_train_2.1"
     json_data_dir = r"C:\bjorn\train_3.json"
     trainset = wav_dataloader(data_dir, json_data_dir)
 
-    iwt = IDWT_3D("haar")
+    #iwt = IDWT_3D("haar")
     
     wav_sdf, context = trainset[0]
     context = torch.tensor(context).to(device)

@@ -86,27 +86,49 @@ len_context = len(context_keys)
 
 conditions = []
 #baselines
-conditions.append([mean_age, 0.0, mean_bp_sys, mean_bp_dia, mean_heigth, mean_weight, 1.0])#male no ht
-conditions.append([mean_age, 0.0, mean_bp_sys, mean_bp_dia, mean_heigth, mean_weight, 0.0])#female no ht
-#baseline with ht 
-conditions.append([mean_age, 1.0, mean_bp_sys, mean_bp_dia, mean_heigth, mean_weight, 1.0])#male ht
-conditions.append([mean_age, 1.0, mean_bp_sys, mean_bp_dia, mean_heigth, mean_weight, 0.0])#female ht
-#extremes high
-conditions.append([high_age, 1.0, high_bp_sys, high_bp_dia, high_heigth, high_weight, 1.0]) #male ht high
-conditions.append([high_age, 1.0, high_bp_sys, high_bp_dia, high_heigth, high_weight, 0.0]) #female ht high
-#extremes low
-conditions.append([low_age, 1.0, low_bp_sys, low_bp_dia, low_heigth, low_weight, 1.0]) #male ht low
-conditions.append([low_age, 1.0, low_bp_sys, low_bp_dia, low_heigth, low_weight, 0.0]) #female ht low
-#extremes old overweight man, high bp, low weight vs opposite:
-conditions.append([high_age, 1.0, high_bp_sys, high_bp_dia, low_heigth, high_weight, 1.0])#old, ht, high bp, low heigth, high weight, male
-conditions.append([high_age, 0.0, low_bp_sys, low_bp_dia, low_heigth, high_weight, 1.0])#old, no_ht, high bp, low heigth, high weight, male
-#extremes old overweight woman, high bp, low weight vs opposite:
-conditions.append([high_age, 1.0, high_bp_sys, high_bp_dia, low_heigth, high_weight, 0.0])#old, ht, high bp, low heigth, high weight, female
-conditions.append([high_age, 0.0, low_bp_sys, low_bp_dia, low_heigth, high_weight, 0.0])#old, no_ht, high bp, low heigth, high weight, female
+conditions.append([np.random.uniform(low_age, high_age), np.random.uniform(0,1), np.random.uniform(low_bp_sys, high_bp_sys),
+                   np.random.uniform(low_bp_dia, high_bp_dia), np.random.uniform(low_heigth, high_heigth), np.random.uniform(low_weight, high_weight), np.random.uniform(0, 1)])
+conditions.append([np.random.uniform(low_age, high_age), np.random.uniform(0,1), np.random.uniform(low_bp_sys, high_bp_sys),
+                   np.random.uniform(low_bp_dia, high_bp_dia), np.random.uniform(low_heigth, high_heigth), np.random.uniform(low_weight, high_weight), np.random.uniform(0, 1)])
+conditions.append([np.random.uniform(low_age, high_age), np.random.uniform(0,1), np.random.uniform(low_bp_sys, high_bp_sys),
+                   np.random.uniform(low_bp_dia, high_bp_dia), np.random.uniform(low_heigth, high_heigth), np.random.uniform(low_weight, high_weight), np.random.uniform(0, 1)])
+conditions.append([np.random.uniform(low_age, high_age), np.random.uniform(0,1), np.random.uniform(low_bp_sys, high_bp_sys),
+                   np.random.uniform(low_bp_dia, high_bp_dia), np.random.uniform(low_heigth, high_heigth), np.random.uniform(low_weight, high_weight), np.random.uniform(0, 1)])
+conditions.append([np.random.uniform(low_age, high_age), np.random.uniform(0,1), np.random.uniform(low_bp_sys, high_bp_sys),
+                   np.random.uniform(low_bp_dia, high_bp_dia), np.random.uniform(low_heigth, high_heigth), np.random.uniform(low_weight, high_weight), np.random.uniform(0, 1)])
+conditions.append([np.random.uniform(low_age, high_age), np.random.uniform(0,1), np.random.uniform(low_bp_sys, high_bp_sys),
+                   np.random.uniform(low_bp_dia, high_bp_dia), np.random.uniform(low_heigth, high_heigth), np.random.uniform(low_weight, high_weight), np.random.uniform(0, 1)])
+conditions.append([np.random.uniform(low_age, high_age), np.random.uniform(0,1), np.random.uniform(low_bp_sys, high_bp_sys),
+                   np.random.uniform(low_bp_dia, high_bp_dia), np.random.uniform(low_heigth, high_heigth), np.random.uniform(low_weight, high_weight), np.random.uniform(0, 1)])
+conditions.append([np.random.uniform(low_age, high_age), np.random.uniform(0,1), np.random.uniform(low_bp_sys, high_bp_sys),
+                   np.random.uniform(low_bp_dia, high_bp_dia), np.random.uniform(low_heigth, high_heigth), np.random.uniform(low_weight, high_weight), np.random.uniform(0, 1)])
+conditions.append([np.random.uniform(low_age, high_age), np.random.uniform(0,1), np.random.uniform(low_bp_sys, high_bp_sys),
+                   np.random.uniform(low_bp_dia, high_bp_dia), np.random.uniform(low_heigth, high_heigth), np.random.uniform(low_weight, high_weight), np.random.uniform(0, 1)])
+conditions.append([np.random.uniform(low_age, high_age), np.random.uniform(0,1), np.random.uniform(low_bp_sys, high_bp_sys),
+                   np.random.uniform(low_bp_dia, high_bp_dia), np.random.uniform(low_heigth, high_heigth), np.random.uniform(low_weight, high_weight), np.random.uniform(0, 1)])
+#conditions.append([mean_age, 0.0, mean_bp_sys, mean_bp_dia, mean_heigth, mean_weight, 0.0])#female no ht
+# conditions.append([mean_age, 0.0, mean_bp_sys, mean_bp_dia, mean_heigth, mean_weight, 1.0])#male no ht
+# conditions.append([mean_age, 0.0, mean_bp_sys, mean_bp_dia, mean_heigth, mean_weight, 0.0])#female no ht
+# #baseline with ht 
+# conditions.append([mean_age, 1.0, mean_bp_sys, mean_bp_dia, mean_heigth, mean_weight, 1.0])#male ht
+# conditions.append([mean_age, 1.0, mean_bp_sys, mean_bp_dia, mean_heigth, mean_weight, 0.0])#female ht
+# #extremes high
+# conditions.append([high_age, 1.0, high_bp_sys, high_bp_dia, high_heigth, high_weight, 1.0]) #male ht high
+# conditions.append([high_age, 1.0, high_bp_sys, high_bp_dia, high_heigth, high_weight, 0.0]) #female ht high
+# #extremes low
+# conditions.append([low_age, 1.0, low_bp_sys, low_bp_dia, low_heigth, low_weight, 1.0]) #male ht low
+# conditions.append([low_age, 1.0, low_bp_sys, low_bp_dia, low_heigth, low_weight, 0.0]) #female ht low
+# #extremes old overweight man, high bp, low weight vs opposite:
+# conditions.append([high_age, 1.0, high_bp_sys, high_bp_dia, low_heigth, high_weight, 1.0])#old, ht, high bp, low heigth, high weight, male
+# conditions.append([high_age, 0.0, low_bp_sys, low_bp_dia, low_heigth, high_weight, 1.0])#old, no_ht, high bp, low heigth, high weight, male
+# #extremes old overweight woman, high bp, low weight vs opposite:
+# conditions.append([high_age, 1.0, high_bp_sys, high_bp_dia, low_heigth, high_weight, 0.0])#old, ht, high bp, low heigth, high weight, female
+# conditions.append([high_age, 0.0, low_bp_sys, low_bp_dia, low_heigth, high_weight, 0.0])#old, no_ht, high bp, low heigth, high weight, female
 
-names = ["bl_male_no_ht", "bl_female_no_ht", "bl_male_ht", "bl_female_ht",
-         "male_ht_high", "female_ht_high", "male_ht_low", "female_ht_low", "old_ht_highBP_lowH_highW_male",
-         "old_noht_highBP_lowH_highW_male", "old_ht_highBP_lowH_highW_female", "old_noht_highBP_lowH_highW_female"]
+# names = ["bl_male_no_ht", "bl_female_no_ht", "bl_male_ht", "bl_female_ht",
+#          "male_ht_high", "female_ht_high", "male_ht_low", "female_ht_low", "old_ht_highBP_lowH_highW_male",
+#          "old_noht_highBP_lowH_highW_male", "old_ht_highBP_lowH_highW_female", "old_noht_highBP_lowH_highW_female"]
+names = ["bl1", "bl2", "bl3", "bl4", "bl5", "bl6", "bl7", "bl8", "bl9", "bl10"]
 
 
 
@@ -144,7 +166,7 @@ for i in tqdm(range(len(context)), total=len(context)):
         beta_start = 0.0015, 
         beta_end = 0.0205, 
         verbose = True,
-        seed = seed
+        seed = None
     )
     x = x.squeeze().detach().cpu().numpy()
     verts, faces, _, _ = marching_cubes(x, level=0)
@@ -161,5 +183,5 @@ for i in tqdm(range(len(context)), total=len(context)):
                 "weight": str(round(context_unormalized[i, 5], 2)),
                 "sex": sex
                 })
-    json_outdir = os.path.join(output_dir, "synth_la.json")
+    json_outdir = os.path.join(output_dir, "synth_la_2.json")
     js_w(patient_dict, json_outdir)

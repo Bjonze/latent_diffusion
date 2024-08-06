@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
                 rec_loss = l1_loss_fn(reconstruction.float(), images.float())
                 kld_loss = kl_weight * kl_loss_fn(z_mu, z_sigma)
-                #per_loss = perceptual_weight * perc_loss_fn(reconstruction.float(), images.float()) TODO: potentially back-transform images for this to work
+                per_loss = perceptual_weight * perc_loss_fn(reconstruction.float(), images.float()) #TODO: potentially back-transform images for this to work
                 gen_loss = adv_weight * adv_loss_fn(logits_fake, target_is_real=True, for_discriminator=False)
                 
                 loss_g = rec_loss + kld_loss + gen_loss #rec_loss + kld_loss + per_loss + gen_loss
